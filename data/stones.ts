@@ -1,0 +1,191 @@
+export interface Stone {
+  id: string;
+  name: string;
+  material: string;
+  origin: string;
+  finish: string;
+  color: string;
+  img: string;
+  desc: string;
+  thai: string;
+  spec: Record<string, string>;
+  applications: string;
+  premium?: boolean;
+}
+
+export const STONES: Stone[] = [
+  {
+    id: 'bianco-carrara',
+    name: 'Bianco Carrara',
+    material: 'Marble',
+    origin: 'Italy',
+    finish: 'Polished',
+    color: 'White',
+    img: '/photos/bianco-carrara.jpg',
+    desc: "The world's most celebrated marble, quarried from the Apuan Alps of Tuscany. Fine white ground with delicate grey veining, prized for centuries by sculptors and architects alike.",
+    thai: 'หินอ่อนขาวคลาสสิกจากเทือกเขาอาเปวนในอิตาลี เนื้อขาวบริสุทธิ์พร้อมลายเส้นสีเทาเบาบาง เหมาะสำหรับงานออกแบบทุกสไตล์',
+    spec: {
+      'Thickness': '20mm / 30mm',
+      'Slab Size': '260 × 160 cm',
+      'Water Absorption': '< 0.2%',
+      'Hardness (Mohs)': '3–4',
+    },
+    applications: 'Flooring, Wall Cladding, Kitchen Countertops, Bathroom Vanities',
+    premium: true,
+  },
+  {
+    id: 'dark-emperador',
+    name: 'Dark Emperador',
+    material: 'Marble',
+    origin: 'Spain',
+    finish: 'Polished',
+    color: 'Brown',
+    img: '/photos/dark-emperador.jpg',
+    desc: 'A rich, deep brown marble from Alicante, Spain. Characterized by dramatic white and gold veining that creates a luxurious, sophisticated appearance for high-end interiors.',
+    thai: 'หินอ่อนน้ำตาลเข้มจากสเปน ลายเส้นสีขาวและทองสวยงาม เหมาะสำหรับงานออกแบบที่ต้องการความหรูหราโดดเด่น',
+    spec: {
+      'Thickness': '20mm / 30mm',
+      'Slab Size': '250 × 140 cm',
+      'Water Absorption': '< 0.3%',
+      'Hardness (Mohs)': '3–4',
+    },
+    applications: 'Feature Walls, Bar Tops, Bathroom Vanities, Staircase',
+    premium: true,
+  },
+  {
+    id: 'jade-onyx',
+    name: 'Jade Onyx',
+    material: 'Onyx',
+    origin: 'Iran',
+    finish: 'Polished',
+    color: 'Green',
+    img: '/photos/jade-onyx.jpg',
+    desc: 'A translucent green onyx with exceptional light-transmitting properties. Each slab is a unique work of art, featuring swirling emerald and jade tones that glow when backlit.',
+    thai: 'หินออนิกซ์สีเขียวทะลุแสงได้ แผ่นหินแต่ละแผ่นมีลวดลายเฉพาะตัว สีเขียวมรกตสวยงาม เหมาะสำหรับงานแสงพิเศษ',
+    spec: {
+      'Thickness': '20mm',
+      'Slab Size': '180 × 90 cm',
+      'Water Absorption': '< 0.1%',
+      'Hardness (Mohs)': '6.5–7',
+    },
+    applications: 'Backlit Feature Walls, Reception Desks, Luxury Countertops',
+    premium: true,
+  },
+  {
+    id: 'statuario-venato',
+    name: 'Statuario Venato',
+    material: 'Marble',
+    origin: 'Italy',
+    finish: 'Polished',
+    color: 'White',
+    img: '/photos/blankimg.jpg',
+    desc: 'One of the rarest and most sought-after marbles in the world. Pure white background with bold, dramatic grey and gold veining — a symbol of uncompromising luxury.',
+    thai: 'หินอ่อนหายากชั้นเยี่ยมจากอิตาลี พื้นขาวบริสุทธิ์พร้อมลายเส้นสีเทาและทองที่โดดเด่น สัญลักษณ์ของความหรูหราระดับโลก',
+    spec: {
+      'Thickness': '20mm / 30mm',
+      'Slab Size': '260 × 160 cm',
+      'Water Absorption': '< 0.15%',
+      'Hardness (Mohs)': '3–4',
+    },
+    applications: 'Kitchen Islands, Master Bathrooms, Feature Walls',
+    premium: true,
+  },
+  {
+    id: 'nero-marquina',
+    name: 'Nero Marquina',
+    material: 'Marble',
+    origin: 'Spain',
+    finish: 'Polished',
+    color: 'Black',
+    img: '/photos/blankimg.jpg',
+    desc: 'Striking jet-black marble from the Basque Country of Spain. Bold white veining creates a dramatic contrast, perfect for contemporary and luxury residential or commercial designs.',
+    thai: 'หินอ่อนดำสนิทจากสเปน ลายเส้นขาวโดดเด่น คอนทราสต์ที่แข็งแกร่ง เหมาะสำหรับงานออกแบบร่วมสมัยและหรูหรา',
+    spec: {
+      'Thickness': '20mm / 30mm',
+      'Slab Size': '250 × 150 cm',
+      'Water Absorption': '< 0.2%',
+      'Hardness (Mohs)': '3–4',
+    },
+    applications: 'Feature Walls, Flooring, Bathroom Floors, Kitchen Countertops',
+  },
+  {
+    id: 'rosa-porrino',
+    name: 'Rosa Porrino',
+    material: 'Granite',
+    origin: 'Spain',
+    finish: 'Polished',
+    color: 'Pink',
+    img: '/photos/blankimg.jpg',
+    desc: 'A warm pink granite from Galicia, Spain. Features a uniform texture with subtle grey and pink tones, offering exceptional durability ideal for high-traffic commercial and residential areas.',
+    thai: 'หินแกรนิตสีชมพูอบอุ่นจากสเปน เนื้อสม่ำเสมอ คงทนแข็งแกร่ง เหมาะสำหรับพื้นที่ใช้งานหนักและงานภายนอก',
+    spec: {
+      'Thickness': '20mm / 30mm',
+      'Slab Size': '280 × 160 cm',
+      'Water Absorption': '< 0.1%',
+      'Hardness (Mohs)': '6–7',
+    },
+    applications: 'Exterior Cladding, Flooring, Staircases, Kitchen Countertops',
+  },
+  {
+    id: 'absolute-black',
+    name: 'Absolute Black',
+    material: 'Granite',
+    origin: 'India',
+    finish: 'Polished',
+    color: 'Black',
+    img: '/photos/bsolute-black.jpg',
+    desc: 'The purest and most consistent black granite available. Quarried in South India, renowned for its uniform jet-black appearance with no visible grain — a true modern classic.',
+    thai: 'หินแกรนิตดำบริสุทธิ์จากอินเดีย สีดำสม่ำเสมอไม่มีลาย เนื้อหินแน่น แข็งแกร่งสูง นิยมใช้ในงานคอนทรา',
+    spec: {
+      'Thickness': '20mm / 30mm',
+      'Slab Size': '270 × 170 cm',
+      'Water Absorption': '< 0.08%',
+      'Hardness (Mohs)': '6.5–7',
+    },
+    applications: 'Kitchen Countertops, Flooring, Wall Cladding, Monuments',
+  },
+  {
+    id: 'crema-marfil',
+    name: 'Crema Marfil',
+    material: 'Marble',
+    origin: 'Spain',
+    finish: 'Honed',
+    color: 'Beige',
+    img: '/photos/blankimg.jpg',
+    desc: 'A classic cream-beige marble with warm ivory tones and subtle veining. Highly versatile and timeless, used extensively in luxury residential and commercial projects worldwide.',
+    thai: 'หินอ่อนสีครีมอบอุ่นจากสเปน ลวดลายนุ่มนวล ใช้ได้กับงานออกแบบหลากหลายสไตล์ เป็นที่นิยมทั่วโลก',
+    spec: {
+      'Thickness': '20mm / 30mm',
+      'Slab Size': '260 × 150 cm',
+      'Water Absorption': '< 0.25%',
+      'Hardness (Mohs)': '3–4',
+    },
+    applications: 'Flooring, Wall Cladding, Bathroom Tiles, Lobby Areas',
+  },
+  {
+    id: 'blue-agate',
+    name: 'Blue Agate',
+    material: 'Semi-precious',
+    origin: 'Brazil',
+    finish: 'Polished',
+    color: 'Blue',
+    img: '/photos/blankimg.jpg',
+    desc: 'Extraordinarily rare blue agate slabs from Brazil. Each piece is completely unique, featuring deep ocean blues and translucent qualities — ideal for statement feature installations.',
+    thai: 'หินกึ่งมีค่าสีน้ำเงินหายากจากบราซิล แต่ละแผ่นมีลวดลายไม่ซ้ำกัน สีน้ำเงินลึกและทะลุแสงได้ สำหรับงานพิเศษ',
+    spec: {
+      'Thickness': '20mm',
+      'Slab Size': '120 × 80 cm',
+      'Water Absorption': '< 0.1%',
+      'Hardness (Mohs)': '7',
+    },
+    applications: 'Feature Walls, Luxury Countertops, Decorative Panels',
+    premium: true,
+  },
+];
+
+export const FACETS: Record<string, string[]> = {
+  Material: ['Marble', 'Granite', 'Onyx', 'Semi-precious'],
+  Origin: ['Italy', 'Spain', 'Iran', 'India', 'Brazil'],
+  Finish: ['Polished', 'Honed'],
+  Color: ['White', 'Brown', 'Green', 'Black', 'Pink', 'Beige', 'Blue'],
+};
