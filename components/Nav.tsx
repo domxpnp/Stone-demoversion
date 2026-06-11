@@ -13,6 +13,7 @@ export default function Nav() {
   const [solid, setSolid] = useState(!overHero);
   // language switcher — UI only for now (no i18n wired up yet)
   const [lang, setLang] = useState<'TH' | 'EN'>('TH');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     setSolid(!overHero);
@@ -22,6 +23,15 @@ export default function Nav() {
     onScroll();
     return () => window.removeEventListener('scroll', onScroll);
   }, [overHero]);
+
+  // close the mobile drawer whenever the route changes
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
+
+  // lock body scroll while the drawer is open
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
 
   const dark = overHero && !solid;
 
@@ -70,6 +80,54 @@ export default function Nav() {
             </button>
           </div>
         </nav>
+
+        {/* mobile cluster — basket + hamburger */}
+        <div className="nav-mobile">
+          <button className="basket-btn" onClick={() => router.push('/palette')} aria-label="Project basket">
+            <Icon.basket />
+            {basket.length > 0 && <span className="badge">{basket.length}</span>}
+          </button>
+          <button
+            className={`nav-burger${menuOpen ? ' on' : ''}`}
+            onClick={() => setMenuOpen(o => !o)}
+            aria-label="Menu"
+            aria-expanded={menuOpen}
+          >
+            <span /><span /><span />
+          </button>
+        </div>
+      </div>
+
+      {/* mobile drawer */}
+      <div className={`nav-drawer${menuOpen ? ' open' : ''}`} onClick={() => setMenuOpen(false)}>
+        <div className="nav-drawer-panel" onClick={e => e.stopPropagation()}>
+          {links.map(([label, path]) => (
+            <button
+              key={path}
+              className={`nav-mlink${pathname === path ? ' active' : ''}`}
+              onClick={() => router.push(path)}
+            >
+              {label}
+            </button>
+          ))}
+          <div className="nav-drawer-actions">
+            <button className="palette-btn thai" onClick={() => router.push('/palette')}>
+              เลือกหิน / PALETTE
+            </button>
+            <div className="lang-switch" role="group" aria-label="Language">
+              {(['TH', 'EN'] as const).map(l => (
+                <button
+                  key={l}
+                  className={lang === l ? 'on' : ''}
+                  onClick={() => setLang(l)}
+                  aria-pressed={lang === l}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </header>
   );
