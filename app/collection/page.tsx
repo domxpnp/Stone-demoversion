@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { STONES, FACETS } from '@/data/stones';
 import Reveal from '@/components/ui/Reveal';
 import Img from '@/components/ui/Img';
@@ -9,9 +9,13 @@ import StoneCursor from '@/components/ui/StoneCursor';
 
 type Filters = Record<string, string[]>;
 
-export default function CollectionPage() {
+function CollectionInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tag = searchParams.get('tag');
+
   const [filters, setFilters] = useState<Filters>({ Material: [], Origin: [], Finish: [], Color: [] });
+  const [query, setQuery] = useState('');
 
   const toggle = (group: string, val: string) =>
     setFilters(f => ({
@@ -20,15 +24,24 @@ export default function CollectionPage() {
     }));
 
   const clearAll = () => setFilters({ Material: [], Origin: [], Finish: [], Color: [] });
+  const clearTag = () => router.push('/collection');
   const anyActive = Object.values(filters).some(a => a.length > 0);
 
-  const shown = STONES.filter(s =>
-    Object.keys(filters).every(g => {
+  const q = query.trim().toLowerCase();
+  const shown = STONES.filter(s => {
+    if (tag && !s.tags.includes(tag)) return false;
+    if (q) {
+      const haystack = [s.name, s.color, s.finish, s.material, s.origin, ...s.tags]
+        .join(' ')
+        .toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    return Object.keys(filters).every(g => {
       const sel = filters[g];
       if (!sel.length) return true;
       return sel.includes(s[g.toLowerCase() as keyof typeof s] as string);
-    })
-  );
+    });
+  });
 
   return (
     <div className="page">
@@ -45,6 +58,29 @@ export default function CollectionPage() {
           {/* filters */}
           <aside className="filters">
             <div className="filter-count">Filter · {STONES.length} Stones</div>
+
+            <div className="filter-search">
+              <input
+                type="text"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Search name, tag, colour…"
+                aria-label="Search stones"
+              />
+              {query && (
+                <button className="filter-search-clear" onClick={() => setQuery('')} aria-label="Clear search">×</button>
+              )}
+            </div>
+
+            {tag && (
+              <div className="filter-group">
+                <span className="label">Keyword</span>
+                <button className="tag-pill on" onClick={clearTag}>
+                  <span className="tick">×</span>{tag}
+                </button>
+              </div>
+            )}
+
             {Object.keys(FACETS).map(group => (
               <div className="filter-group" key={group}>
                 <span className="label">{group}</span>
@@ -64,8 +100,8 @@ export default function CollectionPage() {
                 })}
               </div>
             ))}
-            {anyActive && (
-              <button className="clear-btn" onClick={clearAll}>Clear filters</button>
+            {(anyActive || tag || query) && (
+              <button className="clear-btn" onClick={() => { clearAll(); setQuery(''); if (tag) clearTag(); }}>Clear filters</button>
             )}
           </aside>
 
@@ -90,5 +126,13 @@ export default function CollectionPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CollectionPage() {
+  return (
+    <Suspense fallback={<div className="page"><div className="container" /></div>}>
+      <CollectionInner />
+    </Suspense>
   );
 }

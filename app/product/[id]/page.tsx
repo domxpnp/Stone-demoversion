@@ -59,6 +59,18 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             <p className="prod-desc">{s.desc}</p>
             <p className="prod-thaidesc">{s.thai}</p>
 
+            <div className="prod-tags">
+              {s.tags.map(tag => (
+                <button
+                  key={tag}
+                  className="prod-tag"
+                  onClick={() => router.push(`/collection?tag=${encodeURIComponent(tag)}`)}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+
             <div className="spec-label">Technical Specifications</div>
             <table className="spec-table">
               <tbody>

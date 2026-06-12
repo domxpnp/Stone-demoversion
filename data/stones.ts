@@ -10,6 +10,7 @@ export interface Stone {
   thai: string;
   spec: Record<string, string>;
   applications: string;
+  tags: string[];
   premium?: boolean;
 }
 
@@ -31,6 +32,7 @@ export const STONES: Stone[] = [
       'Hardness (Mohs)': '3–4',
     },
     applications: 'Flooring, Wall Cladding, Kitchen Countertops, Bathroom Vanities',
+    tags: ['Classic', 'Luxury', 'Veined', 'Timeless'],
     premium: true,
   },
   {
@@ -50,6 +52,7 @@ export const STONES: Stone[] = [
       'Hardness (Mohs)': '3–4',
     },
     applications: 'Feature Walls, Bar Tops, Bathroom Vanities, Staircase',
+    tags: ['Luxury', 'Veined', 'Warm', 'Dramatic'],
     premium: true,
   },
   {
@@ -69,6 +72,7 @@ export const STONES: Stone[] = [
       'Hardness (Mohs)': '6.5–7',
     },
     applications: 'Backlit Feature Walls, Reception Desks, Luxury Countertops',
+    tags: ['Translucent', 'Luxury', 'Backlit', 'Statement'],
     premium: true,
   },
   {
@@ -88,6 +92,7 @@ export const STONES: Stone[] = [
       'Hardness (Mohs)': '3–4',
     },
     applications: 'Kitchen Islands, Master Bathrooms, Feature Walls',
+    tags: ['Rare', 'Luxury', 'Veined', 'Statement'],
     premium: true,
   },
   {
@@ -107,6 +112,7 @@ export const STONES: Stone[] = [
       'Hardness (Mohs)': '3–4',
     },
     applications: 'Feature Walls, Flooring, Bathroom Floors, Kitchen Countertops',
+    tags: ['Contemporary', 'Veined', 'Dramatic', 'Timeless'],
   },
   {
     id: 'rosa-porrino',
@@ -125,6 +131,7 @@ export const STONES: Stone[] = [
       'Hardness (Mohs)': '6–7',
     },
     applications: 'Exterior Cladding, Flooring, Staircases, Kitchen Countertops',
+    tags: ['Durable', 'Warm', 'Exterior', 'Uniform'],
   },
   {
     id: 'absolute-black',
@@ -143,6 +150,7 @@ export const STONES: Stone[] = [
       'Hardness (Mohs)': '6.5–7',
     },
     applications: 'Kitchen Countertops, Flooring, Wall Cladding, Monuments',
+    tags: ['Durable', 'Contemporary', 'Uniform', 'Timeless'],
   },
   {
     id: 'crema-marfil',
@@ -161,6 +169,7 @@ export const STONES: Stone[] = [
       'Hardness (Mohs)': '3–4',
     },
     applications: 'Flooring, Wall Cladding, Bathroom Tiles, Lobby Areas',
+    tags: ['Classic', 'Warm', 'Timeless', 'Versatile'],
   },
   {
     id: 'blue-agate',
@@ -179,6 +188,7 @@ export const STONES: Stone[] = [
       'Hardness (Mohs)': '7',
     },
     applications: 'Feature Walls, Luxury Countertops, Decorative Panels',
+    tags: ['Rare', 'Translucent', 'Statement', 'Luxury'],
     premium: true,
   },
 ];
