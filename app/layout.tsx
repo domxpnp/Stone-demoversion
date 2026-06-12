@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { Cormorant_Garamond, Jost, IBM_Plex_Sans_Thai } from 'next/font/google';
 import { StoreProvider } from '@/context/StoreContext';
-import Nav from '@/components/Nav';
-import Footer from '@/components/Footer';
+import SiteChrome from '@/components/SiteChrome';
 import './globals.css';
 
 const cormorant = Cormorant_Garamond({
@@ -37,9 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="th" className={`${cormorant.variable} ${jost.variable} ${ibmThai.variable}`}>
       <body>
         <StoreProvider>
-          <Nav />
-          <main>{children}</main>
-          <Footer />
+          <SiteChrome>{children}</SiteChrome>
         </StoreProvider>
       </body>
     </html>

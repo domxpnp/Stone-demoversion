@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
+import { CLEARANCE_STORAGE_KEY, DEFAULT_CLEARANCE_SETTINGS, loadClearanceConfig } from '@/data/clearance';
 import Icon from './ui/Icon';
 
 export default function Nav() {
@@ -14,6 +15,16 @@ export default function Nav() {
   // language switcher — UI only for now (no i18n wired up yet)
   const [lang, setLang] = useState<'TH' | 'EN'>('TH');
   const [menuOpen, setMenuOpen] = useState(false);
+  // clearance page can be toggled off / relabelled from the admin
+  const [clearance, setClearance] = useState(DEFAULT_CLEARANCE_SETTINGS);
+
+  useEffect(() => {
+    const read = () => setClearance(loadClearanceConfig().settings);
+    read();
+    const sync = (e: StorageEvent) => { if (e.key === CLEARANCE_STORAGE_KEY) read(); };
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
+  }, []);
 
   useEffect(() => {
     setSolid(!overHero);
@@ -37,7 +48,7 @@ export default function Nav() {
 
   const links: [string, string][] = [
     ['Product', '/collection'],
-    ['Stock Clearance', '/clearance'],
+    ...(clearance.enabled ? [[clearance.navLabel, '/clearance'] as [string, string]] : []),
     ['About', '/about'],
     ['Contact', '/contact'],
   ];

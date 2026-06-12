@@ -834,7 +834,7 @@ img { display: block; max-width: 100%; }
   font-weight: 500; color: var(--ink);
 }
 
-.clr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+.clr-grid { display: grid; grid-template-columns: repeat(var(--clr-cols, 3), 1fr); gap: 28px; }
 .clr-card { cursor: pointer; background: none; border: none; padding: 0; text-align: left; display: block; width: 100%; }
 .clr-imgwrap { position: relative; overflow: hidden; }
 .clr-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; filter: saturate(.95); transition: transform .9s cubic-bezier(.2,.7,.2,1); }

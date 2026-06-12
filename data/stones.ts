@@ -12,6 +12,7 @@ export interface Stone {
   applications: string;
   tags: string[];
   premium?: boolean;
+  status?: 'published' | 'draft';
 }
 
 export const STONES: Stone[] = [
@@ -199,3 +200,11 @@ export const FACETS: Record<string, string[]> = {
   Finish: ['Polished', 'Honed'],
   Color: ['White', 'Brown', 'Green', 'Black', 'Pink', 'Beige', 'Blue'],
 };
+
+/* Master tag/keyword vocabulary — managed from the admin "Tags" page,
+   assigned per stone, and used by the public Collection tag filter. */
+export const TAGS: string[] = [
+  'Classic', 'Luxury', 'Veined', 'Timeless', 'Warm', 'Dramatic',
+  'Translucent', 'Backlit', 'Statement', 'Rare', 'Contemporary',
+  'Durable', 'Exterior', 'Uniform', 'Versatile',
+];
