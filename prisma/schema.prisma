@@ -1,0 +1,454 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+//
+// StoneClub catalog / CMS schema (PostgreSQL)
+// Generated from the StoneClub ER diagram.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================ ENUMS ============================
+
+enum AdminRole {
+  owner
+  admin
+  editor
+  viewer
+
+  @@map("admin_role")
+}
+
+enum StoneStatus {
+  draft
+  published
+  archived
+
+  @@map("stone_status")
+}
+
+enum InquiryStatus {
+  new
+  in_progress
+  quoted
+  closed
+
+  @@map("inquiry_status")
+}
+
+enum ClearanceBadge {
+  limited
+  clearance
+  last
+
+  @@map("clearance_badge")
+}
+
+// ============================ OPS / ADMIN ============================
+
+model AdminUser {
+  id       String    @id @default(uuid()) @db.Uuid
+  name     String
+  initials String?
+  email    String    @unique
+  role     AdminRole
+  active   Boolean   @default(true)
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  activityLogs ActivityLog[]
+
+  @@map("admin_users")
+}
+
+model ActivityLog {
+  id        BigInt @id @default(autoincrement())
+  actorId   String? @map("actor_id") @db.Uuid
+  actorName String? @map("actor_name")
+  action    String
+  target    String?
+  type      String?
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  actor AdminUser? @relation(fields: [actorId], references: [id])
+
+  @@map("activity_log")
+}
+
+model MediaAsset {
+  id       String  @id @default(uuid()) @db.Uuid
+  url      String
+  filename String?
+  alt      String?
+  width    Int?
+  height   Int?
+  bytes    BigInt?
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  @@map("media_assets")
+}
+
+// ============================ LOOKUP / FACETS ============================
+
+model Tag {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  sort Int    @default(0)
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  stoneTags StoneTag[]
+
+  @@map("tags")
+}
+
+model Material {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  sort Int    @default(0)
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  stones Stone[]
+
+  @@map("materials")
+}
+
+model Origin {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  sort Int    @default(0)
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  stones Stone[]
+
+  @@map("origins")
+}
+
+model Finish {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  sort Int    @default(0)
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  stones Stone[]
+
+  @@map("finishes")
+}
+
+model Color {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  hex  String?
+  sort Int    @default(0)
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  stones Stone[]
+
+  @@map("colors")
+}
+
+// ============================ CATALOG CORE ============================
+
+model Stone {
+  id           String      @id @default(uuid()) @db.Uuid
+  slug         String      @unique
+  name         String
+  materialId   Int?        @map("material_id")
+  originId     Int?        @map("origin_id")
+  finishId     Int?        @map("finish_id")
+  colorId      Int?        @map("color_id")
+  descEn       String?     @map("desc_en")
+  descTh       String?     @map("desc_th")
+  applications String?
+  premium      Boolean     @default(false)
+  status       StoneStatus @default(draft)
+  primaryImage String?     @map("primary_image")
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  material Material? @relation(fields: [materialId], references: [id])
+  origin   Origin?   @relation(fields: [originId], references: [id])
+  finish   Finish?   @relation(fields: [finishId], references: [id])
+  color    Color?    @relation(fields: [colorId], references: [id])
+
+  stoneTags    StoneTag[]
+  specs        StoneSpec[]
+  images       StoneImage[]
+  inquiryItems InquiryItem[]
+
+  @@map("stones")
+}
+
+model StoneTag {
+  stoneId String @map("stone_id") @db.Uuid
+  tagId   Int    @map("tag_id")
+
+  // audit (reduced: create + soft-delete)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  stone Stone @relation(fields: [stoneId], references: [id], onDelete: Cascade)
+  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([stoneId, tagId])
+  @@map("stone_tags")
+}
+
+model StoneSpec {
+  id      BigInt @id @default(autoincrement())
+  stoneId String @map("stone_id") @db.Uuid
+  label   String
+  value   String?
+  sort    Int    @default(0)
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  stone Stone @relation(fields: [stoneId], references: [id], onDelete: Cascade)
+
+  @@map("stone_specs")
+}
+
+model StoneImage {
+  id        BigInt  @id @default(autoincrement())
+  stoneId   String  @map("stone_id") @db.Uuid
+  url       String
+  alt       String?
+  isPrimary Boolean @default(false) @map("is_primary")
+  sort      Int     @default(0)
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  stone Stone @relation(fields: [stoneId], references: [id], onDelete: Cascade)
+
+  @@map("stone_images")
+}
+
+// ============================ INQUIRIES (LEADS) ============================
+
+model Inquiry {
+  id         String        @id
+  name       String
+  company    String?
+  email      String?
+  phone      String?
+  channel    String?
+  project    String?
+  message    String?
+  status     InquiryStatus @default(new)
+  receivedAt DateTime      @default(now()) @map("received_at") @db.Timestamptz
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  items InquiryItem[]
+
+  @@map("inquiries")
+}
+
+model InquiryItem {
+  id        BigInt  @id @default(autoincrement())
+  inquiryId String  @map("inquiry_id")
+  stoneId   String? @map("stone_id") @db.Uuid
+  stoneRef  String? @map("stone_ref")
+  qty       String?
+  note      String?
+  sort      Int     @default(0)
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  inquiry Inquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  stone   Stone?  @relation(fields: [stoneId], references: [id])
+
+  @@map("inquiry_items")
+}
+
+// ============================ CMS CONTENT ============================
+
+model PageContent {
+  id    String @id
+  label String?
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  fields PageField[]
+
+  @@map("page_contents")
+}
+
+model PageField {
+  id     BigInt  @id @default(autoincrement())
+  pageId String  @map("page_id")
+  key    String
+  label  String?
+  type   String?
+  value  String?
+  sort   Int     @default(0)
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  page PageContent @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@map("page_fields")
+}
+
+// ============================ CLEARANCE ============================
+
+model ClearanceItem {
+  id       String         @id
+  name     String
+  material String?
+  image    String?
+  badge    ClearanceBadge?
+  hidden   Boolean        @default(false)
+  sort     Int            @default(0)
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  @@map("clearance_items")
+}
+
+// Singleton row (id is a boolean locked to true).
+model ClearanceSettings {
+  id                Boolean @id @default(true)
+  enabled           Boolean @default(false)
+  navLabel          String? @map("nav_label")
+  columns           Int?    @db.SmallInt
+  showEnquireHover  Boolean @default(false) @map("show_enquire_hover")
+  config            Json?   @db.JsonB
+
+  // audit
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  createdBy String?   @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  updatedBy String?   @map("updated_by") @db.Uuid
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+  deletedBy String?   @map("deleted_by") @db.Uuid
+
+  @@map("clearance_settings")
+}
