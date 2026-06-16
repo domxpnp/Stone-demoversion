@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: stoneclub
       POSTGRES_USER: admin
-      POSTGRES_PASSWORD: 194343
-    ports: ["5432:5432"]
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports: ["127.0.0.1:5432:5432"]
     volumes: ["pgdata:/var/lib/postgresql/data"]
 volumes: { pgdata: {} }
