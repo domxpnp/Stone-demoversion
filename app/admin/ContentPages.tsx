@@ -1,22 +1,51 @@
 'use client';
 
 /* ===== STONECLUB ADMIN — Pages content, Media library, Filters ===== */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { A, Field, AdminCtx, onImgError } from './ui';
 import { PAGES, PageContent } from './adminData';
 
 /* ---------------- PAGES (editable content blocks) ---------------- */
 export function PagesPage({ showToast }: AdminCtx) {
   const [active, setActive] = useState('home');
+  // Seed from the static PAGES so the UI renders instantly, then replace
+  // with live data from the DB once /api/pages responds.
   const [data, setData] = useState<Record<string, PageContent>>(() => JSON.parse(JSON.stringify(PAGES)));
   const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    getDataAll();
+  }, []);
+
+  const getDataAll = () => {
+    fetch('/api/pages')
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then((pages: Record<string, PageContent>) => {
+        if (pages && Object.keys(pages).length) setData(pages);
+      })
+      .catch(err => console.error('โหลดเนื้อหาหน้าจาก /api/pages ไม่สำเร็จ:', err));
+  };
   const page = data[active];
 
   const set = (key: string, val: string) => {
     setData(p => ({ ...p, [active]: { ...p[active], fields: p[active].fields.map(f => f.key === key ? { ...f, value: val } : f) } }));
     setDirty(true);
   };
-  const save = () => { setDirty(false); showToast('บันทึกเนื้อหาหน้า "' + page.label.split(' / ')[0] + '" แล้ว'); };
+  const save = async () => {
+    try {
+      const res = await fetch('/api/pages/' + active, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label: page.label, fields: page.fields }),
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      setDirty(false);
+      showToast('บันทึกเนื้อหาหน้า "' + page.label.split(' / ')[0] + '" แล้ว');
+    } catch (err) {
+      console.error('บันทึก /api/pages/' + active + ' ไม่สำเร็จ:', err);
+      showToast('บันทึกไม่สำเร็จ — ลองใหม่อีกครั้ง');
+    }
+  };
 
   const TABS = Object.entries(data).map(([k, v]) => ({ id: k, label: v.label }));
 

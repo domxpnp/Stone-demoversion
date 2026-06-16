@@ -6,6 +6,7 @@ import {
   CLEARANCE_ITEMS,
   DEFAULT_CLEARANCE_SETTINGS,
 } from "../data/clearance";
+import { PAGES } from "../app/admin/adminData";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -132,17 +133,42 @@ async function seedClearance() {
   });
 }
 
+async function seedPages() {
+  // PAGES is keyed by page id (home/about/contact); each holds editable fields.
+  for (const [pageId, page] of Object.entries(PAGES)) {
+    await prisma.pageContent.upsert({
+      where: { id: pageId },
+      create: { id: pageId, label: page.label },
+      update: { label: page.label },
+    });
+
+    // rebuild fields so re-runs stay clean (mirrors seedStones children)
+    await prisma.pageField.deleteMany({ where: { pageId } });
+    const fields = page.fields.map((f, sort) => ({
+      pageId,
+      key: f.key,
+      label: f.label,
+      type: f.type,
+      value: f.value,
+      sort,
+    }));
+    if (fields.length) await prisma.pageField.createMany({ data: fields });
+  }
+}
+
 async function main() {
   const tagMap = await seedLookups();
   await seedStones(tagMap);
   await seedClearance();
+  await seedPages();
 
-  const [stones, tags, clearance] = await Promise.all([
+  const [stones, tags, clearance, pages] = await Promise.all([
     prisma.stone.count(),
     prisma.tag.count(),
     prisma.clearanceItem.count(),
+    prisma.pageContent.count(),
   ]);
-  console.log(`✅ Seeded: ${stones} stones, ${tags} tags, ${clearance} clearance items`);
+  console.log(`✅ Seeded: ${stones} stones, ${tags} tags, ${clearance} clearance items, ${pages} pages`);
 }
 
 main()

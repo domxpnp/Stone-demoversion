@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import Icon from '@/components/ui/Icon';
 import Img from '@/components/ui/Img';
+import { usePageContent } from '@/lib/usePageContent';
 
 interface Row {
   n: string;
@@ -48,6 +49,7 @@ const ROWS: Row[] = [
 
 export default function AboutPage() {
   const router = useRouter();
+  const f = usePageContent('about');
 
   return (
     <div>
@@ -56,16 +58,9 @@ export default function AboutPage() {
           {/* MASTHEAD */}
           <div className="ab-mast">
             <div className="left">
-              <div className="eyebrow">About — เกี่ยวกับเรา</div>
-              <h1>
-                From the quarry,
-                <span className="it">to your hand.</span>
-              </h1>
-              <p className="lead">
-                <span className="dc">ที่</span>ตั้งของเราอยู่ในอำเภอปากช่อง จังหวัดนครราชสีมา
-                บริษัท สโตนคลับ จำกัด เป็นผู้ผลิตและจัดจำหน่ายหินธรรมชาติทุกชนิด
-                พร้อมบริการนำเข้า–ส่งออกทั่วโลก เพื่อความต้องการและสิ่งที่ดีที่สุดสำหรับลูกค้าทุกราย
-              </p>
+              <div className="eyebrow">{f('about_eyebrow', 'About — เกี่ยวกับเรา')}</div>
+              <h1>{f('about_title', 'From the quarry, to your hand.')}</h1>
+              <p className="lead">{f('about_lead', 'ที่ตั้งของเราอยู่ในอำเภอปากช่อง จังหวัดนครราชสีมา บริษัท สโตนคลับ จำกัด เป็นผู้ผลิตและจัดจำหน่ายหินธรรมชาติทุกชนิด พร้อมบริการนำเข้า–ส่งออกทั่วโลก เพื่อความต้องการและสิ่งที่ดีที่สุดสำหรับลูกค้าทุกราย')}</p>
             </div>
             <div className="figure">
               <Img src="/photos/dark-emperador.jpg" alt="หินอ่อน Dark Emperador" />
@@ -77,22 +72,22 @@ export default function AboutPage() {
           {/* STATS */}
           <div className="ab-stats">
             <div className="ab-stat">
-              <div className="num">2009</div>
+              <div className="num">{f('stat_years','2009')}</div>
               <div className="lbl">Established</div>
               <div className="th">ก่อตั้ง · ปากช่อง</div>
             </div>
             <div className="ab-stat">
-              <div className="num">50<span className="it">+</span></div>
+              <div className="num">{f('stat_projects','50')}<span className="it">+</span></div>
               <div className="lbl">Stone Varieties</div>
               <div className="th">หินธรรมชาติทุกชนิด</div>
             </div>
             <div className="ab-stat">
-              <div className="num">6</div>
+              <div className="num">{f('stat_countries','5')}</div>
               <div className="lbl">Categories</div>
               <div className="th">หมวดหินครบครัน</div>
             </div>
             <div className="ab-stat">
-              <div className="num">∞</div>
+              <div className="num">{f('stat_slabs','5')}</div>
               <div className="lbl">Worldwide Reach</div>
               <div className="th">นำเข้า · ส่งออกทั่วโลก</div>
             </div>

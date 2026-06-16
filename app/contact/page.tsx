@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/Icon';
 import Img from '@/components/ui/Img';
+import { usePageContent } from '@/lib/usePageContent';
 
 interface FormState {
   name: string;
@@ -21,6 +22,7 @@ const SALES_TEAM = [
 export default function ContactPage() {
   const [form, setForm] = useState<FormState>({ name: '', email: '', phone: '', company: '', message: '' });
   const [sent, setSent] = useState(false);
+  const f = usePageContent('contact');
 
   const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
@@ -50,7 +52,7 @@ export default function ContactPage() {
               <div className="t">ที่อยู่ / Address</div>
               <div className="v">
                 <span style={{ color: 'var(--gold)', display: 'block' }}>บริษัท สโตนคลับ จำกัด</span>
-                258 หมู่ 5 ต.กลางดง อ.ปากช่อง จ.นครราชสีมา 30320
+                {f('addr_th', '258 หมู่ 5 ต.กลางดง อ.ปากช่อง จ.นครราชสีมา 30320')}
                 <br /><br />
                 StoneClub Co., Ltd.<br />
                 258 Moo 5 Klang Dong, Pak Chong,<br />
@@ -64,7 +66,7 @@ export default function ContactPage() {
             <div className="ic"><Icon.phone /></div>
             <div className="ct">
               <div className="t">Office</div>
-              <div className="v">044-009927<br />086-4657340</div>
+              <div className="v">{f('phone', '044-009927 · 086-4657340')}</div>
             </div>
           </div>
 
@@ -73,7 +75,7 @@ export default function ContactPage() {
             <div className="ic"><Icon.mail /></div>
             <div className="ct">
               <div className="t">Email</div>
-              <div className="v">info@stoneclubthailand.com</div>
+              <div className="v">{f('email', 'info@stoneclubthailand.com')}</div>
             </div>
           </div>
 

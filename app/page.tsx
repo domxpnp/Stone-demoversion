@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { STONES } from '@/data/stones';
+import { usePageContent } from '@/lib/usePageContent';
 import Reveal from '@/components/ui/Reveal';
 import Icon from '@/components/ui/Icon';
 import Img from '@/components/ui/Img';
@@ -9,6 +10,7 @@ import StoneCursor from '@/components/ui/StoneCursor';
 
 export default function HomePage() {
   const router = useRouter();
+  const f = usePageContent('home');
   const featured = ['bianco-carrara', 'dark-emperador', 'jade-onyx']
     .map(id => STONES.find(s => s.id === id)!);
 
@@ -27,15 +29,9 @@ export default function HomePage() {
           <span>ปากช่อง<span className="dotsep" />เขาใหญ่<span className="dotsep" />นครราชสีมา</span>
         </div>
         <div className="hero-content">
-          <div className="hero-kicker">STONECLUB THAILAND · นครราชสีมา</div>
-          <h1 className="hero-title">
-            หินธรรมชาติ
-            <span className="it">ทุกชนิด</span>
-          </h1>
-          <p className="hero-sub">
-            ผู้นำเข้าและจัดจำหน่ายหินธรรมชาติ นำเข้า–ส่งออกทั่วโลก
-            รับประกันคุณภาพและราคาที่ดีที่สุด
-          </p>
+          <div className="hero-kicker">{f('hero_kicker', 'STONECLUB THAILAND · นครราชสีมา')}</div>
+          <h1 className="hero-title">{f('hero_title', 'หินธรรมชาติทุกชนิด')}</h1>
+          <p className="hero-sub">{f('hero_sub', 'ผู้นำเข้าและจัดจำหน่ายหินธรรมชาติ นำเข้า–ส่งออกทั่วโลก รับประกันคุณภาพและราคาที่ดีที่สุด')}</p>
           <button className="hero-scroll" onClick={scrollDown}>
             <span className="dot"><Icon.chevD /></span>
             เลื่อนลงเพื่อดู
@@ -63,7 +59,7 @@ export default function HomePage() {
           <Reveal className="sec-head">
             <div>
               <div className="sec-num">I.</div>
-              <h2 className="sec-title">Exceptional <span className="it">Slabs</span></h2>
+              <h2 className="sec-title">{f('featured_title', 'Exceptional Slabs')}</h2>
             </div>
             <button className="btn-ghost" onClick={() => router.push('/collection')}>
               View All <Icon.arrow />
