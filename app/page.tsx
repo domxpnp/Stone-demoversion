@@ -84,6 +84,24 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* stats strip */}
+      <section className="container">
+        <Reveal className="ab-stats home-stats">
+          {[
+            { num: '20', it: '+', lbl: 'Years', th: 'ประสบการณ์ด้านหิน' },
+            { num: '40', it: '+', lbl: 'Stone Types', th: 'ชนิดหินให้เลือกสรร' },
+            { num: '1,200', it: '+', lbl: 'Projects', th: 'โปรเจคทั่วประเทศ' },
+            { num: '15', it: '+', lbl: 'Countries', th: 'แหล่งนำเข้าทั่วโลก' },
+          ].map((s, i) => (
+            <Reveal className="ab-stat" key={s.lbl} delay={i * 90}>
+              <div className="num">{s.num}<span className="it">{s.it}</span></div>
+              <div className="lbl">{s.lbl}</div>
+              <div className="th">{s.th}</div>
+            </Reveal>
+          ))}
+        </Reveal>
+      </section>
+
       {/* about teaser */}
       <section className="teaser split">
         <Reveal className="teaser-text">
@@ -141,6 +159,65 @@ export default function HomePage() {
             </button>
           </Reveal>
         </div>
+      </section>
+
+      {/* materials / categories */}
+      <section className="section-pad mats">
+        <div className="container">
+          <Reveal className="sec-head">
+            <div>
+              <div className="sec-num">III.</div>
+              <h2 className="sec-title">Our Materials</h2>
+            </div>
+            <div className="label-thai mats-sub">ครบทุกประเภทหินธรรมชาติ</div>
+          </Reveal>
+          <div className="matgrid">
+            {[
+              { name: 'หินอ่อน', en: 'Marble', img: '/photos/bianco-carrara.jpg', desc: 'ลวดลายเส้นสายอ่อนช้อย เหมาะกับงานหรูหราคลาสสิก' },
+              { name: 'หินแกรนิต', en: 'Granite', img: '/photos/dark-emperador.jpg', desc: 'แข็งแกร่ง ทนทาน เหมาะกับท็อปครัวและพื้นใช้งานหนัก' },
+              { name: 'หินโอนิกซ์', en: 'Onyx', img: '/photos/jade-onyx.jpg', desc: 'โปร่งแสง สวยล้ำ สำหรับงานตกแต่งระดับพรีเมียม' },
+              { name: 'หินทราเวอร์ทีน', en: 'Travertine', img: '/photos/silver-travertine.jpg', desc: 'ผิวสัมผัสธรรมชาติ อบอุ่น เหมาะกับงานภายนอกและสระว่ายน้ำ' },
+            ].map((m, i) => (
+              <Reveal key={m.en} delay={i * 100}>
+                <button className="matcard" onClick={() => router.push('/collection')}>
+                  <div className="matcard-img">
+                    <Img src={m.img} alt={m.name} />
+                    <span className="matcard-en">{m.en}</span>
+                  </div>
+                  <div className="matcard-body">
+                    <div className="matcard-name">{m.name}</div>
+                    <p className="matcard-desc thai">{m.desc}</p>
+                    <span className="matcard-link">ดูคอลเลกชัน <Icon.arrow /></span>
+                  </div>
+                </button>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA banner */}
+      <section className="cta-banner">
+        <div className="bg" style={{ backgroundImage: 'url(/photos/kitchen-wide.jpg)' }} />
+        <Reveal className="cta-inner">
+          <div className="eyebrow">เริ่มต้นโปรเจคของคุณ</div>
+          <h2>
+            หินที่ใช่
+            <span className="it">สำหรับงานของคุณ</span>
+          </h2>
+          <p className="thai cta-text">
+            ปรึกษาทีมผู้เชี่ยวชาญของเรา เพื่อคัดสรรหินธรรมชาติที่เหมาะกับโปรเจค
+            พร้อมใบเสนอราคาและบริการนำเข้า–ส่งออกทั่วโลก
+          </p>
+          <div className="cta-actions">
+            <button className="btn btn-light" onClick={() => router.push('/contact')}>
+              ติดต่อเรา <span className="arr"><Icon.arrow /></span>
+            </button>
+            <button className="btn btn-light" onClick={() => router.push('/palette')}>
+              สร้าง Project Palette <span className="arr"><Icon.arrow /></span>
+            </button>
+          </div>
+        </Reveal>
       </section>
     </div>
   );
