@@ -39,6 +39,7 @@ export const A: Record<string, IconFn> = {
   globe: (p = {}) => <svg viewBox="0 0 24 24" {...base} strokeWidth={1.4} {...p}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18" /></svg>,
   ext: (p = {}) => <svg viewBox="0 0 24 24" {...base} {...p}><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>,
   save: (p = {}) => <svg viewBox="0 0 24 24" {...base} {...p}><path d="M5 3h11l3 3v15H5z" /><path d="M8 3v5h7M8 21v-7h8v7" /></svg>,
+  users: (p = {}) => <svg viewBox="0 0 24 24" {...base} {...p}><circle cx="9" cy="8" r="3.2" /><path d="M3.5 20a5.5 5.5 0 0 1 11 0M16 5.2a3.2 3.2 0 0 1 0 6M17.5 14.6A5.5 5.5 0 0 1 21 20" /></svg>,
 };
 
 /* status meta for inquiries */

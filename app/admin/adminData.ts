@@ -20,6 +20,18 @@ export interface Inquiry {
   message: string;
 }
 
+export type AdminRole = 'owner' | 'admin' | 'editor' | 'viewer';
+
+/* Back-office users who can sign in to /admin */
+export interface AdminAccount {
+  id: string;
+  name: string;
+  initials: string;
+  email: string;
+  role: AdminRole;
+  active: boolean;
+}
+
 export interface PageField {
   key: string;
   label: string;

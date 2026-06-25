@@ -53,11 +53,12 @@ enum ClearanceBadge {
 
 model AdminUser {
   id       String    @id @default(uuid()) @db.Uuid
-  name     String
-  initials String?
-  email    String    @unique
-  role     AdminRole
-  active   Boolean   @default(true)
+  name         String
+  initials     String?
+  email        String    @unique
+  role         AdminRole
+  active       Boolean   @default(true)
+  passwordHash String?   @map("password_hash")
 
   // audit
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
