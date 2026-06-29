@@ -235,12 +235,15 @@ function MediaTile({ m, onCopy, onEdit, onRemove }: {
   return (
     <div className="media-tile">
       <div className={'mt-img' + (loaded ? '' : ' skel')} onClick={() => onCopy(m.url)} title="คลิกเพื่อคัดลอกพาธ">
-        {/* next/image serves a resized WebP/AVIF thumbnail instead of the full
-            original, and lazy-loads — what keeps the grid smooth while scrolling. */}
+        {/* User-uploaded files are served straight from public/uploads, so we skip
+            the next/image optimizer (`unoptimized`): on a self-hosted box the
+            optimizer can't reliably fetch a just-written file and returns 400. We
+            still get lazy-loading and the fade-in skeleton. */}
         <Image
           src={src}
           alt={m.alt}
           fill
+          unoptimized
           sizes="(max-width:640px) 50vw, (max-width:1100px) 33vw, 22vw"
           className={loaded ? 'on' : ''}
           onLoad={() => setLoaded(true)}
