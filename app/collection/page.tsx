@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { STONES, FACETS } from '@/data/stones';
 import Reveal from '@/components/ui/Reveal';
@@ -16,6 +16,19 @@ function CollectionInner() {
 
   const [filters, setFilters] = useState<Filters>({ Material: [], Origin: [], Finish: [], Color: [] });
   const [query, setQuery] = useState('');
+
+  // Filter options are managed in the admin Filters page; load them live so the
+  // sidebar always matches what's configured. Seed with the static FACETS so the
+  // first paint isn't empty, then replace once /api/facets responds.
+  const [facets, setFacets] = useState<Record<string, string[]>>(FACETS);
+  useEffect(() => {
+    fetch('/api/facets')
+      .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((data: Record<string, { name: string }[]>) => {
+        setFacets(Object.fromEntries(Object.entries(data).map(([k, v]) => [k, v.map(o => o.name)])));
+      })
+      .catch(() => {}); // keep the static fallback on failure
+  }, []);
 
   const toggle = (group: string, val: string) =>
     setFilters(f => ({
@@ -81,10 +94,10 @@ function CollectionInner() {
               </div>
             )}
 
-            {Object.keys(FACETS).map(group => (
+            {Object.keys(facets).map(group => (
               <div className="filter-group" key={group}>
                 <span className="label">{group}</span>
-                {FACETS[group].map(val => {
+                {facets[group].map(val => {
                   const on = filters[group].includes(val);
                   const available = STONES.some(s => s[group.toLowerCase() as keyof typeof s] === val);
                   return (

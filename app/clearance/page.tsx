@@ -4,9 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   BADGE_LABELS,
-  CLEARANCE_STORAGE_KEY,
   DEFAULT_CLEARANCE_CONFIG,
-  loadClearanceConfig,
   type ClearanceConfig,
 } from '@/data/clearance';
 import Reveal from '@/components/ui/Reveal';
@@ -16,15 +14,15 @@ import Icon from '@/components/ui/Icon';
 export default function ClearancePage() {
   const router = useRouter();
 
-  // start from defaults for SSR, then hydrate from the admin-saved config
+  // start from defaults for SSR, then hydrate from the live (DB-backed) config
   const [config, setConfig] = useState<ClearanceConfig>(DEFAULT_CLEARANCE_CONFIG);
   useEffect(() => {
-    setConfig(loadClearanceConfig());
-    const sync = (e: StorageEvent) => {
-      if (e.key === CLEARANCE_STORAGE_KEY) setConfig(loadClearanceConfig());
-    };
-    window.addEventListener('storage', sync);
-    return () => window.removeEventListener('storage', sync);
+    let ignore = false;
+    fetch('/api/clearance')
+      .then(r => (r.ok ? r.json() : null))
+      .then((data: ClearanceConfig | null) => { if (!ignore && data) setConfig(data); })
+      .catch(() => {});
+    return () => { ignore = true; };
   }, []);
 
   const { settings } = config;

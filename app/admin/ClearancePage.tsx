@@ -1,7 +1,10 @@
 'use client';
 
-/* ===== STONECLUB ADMIN — Stock Clearance: front-page settings + live preview ===== */
-import { useState } from 'react';
+/* ===== STONECLUB ADMIN — Stock Clearance: front-page settings + live preview =====
+   Settings (hero/section/cta + display options) are edited locally and saved with
+   the top "บันทึก" button → PUT /api/clearance. Items persist immediately on every
+   create / edit / delete / show-hide / reorder via /api/clearance(/:id). */
+import { useEffect, useRef, useState } from 'react';
 import {
   BADGE_COLORS,
   BADGE_LABELS,
@@ -10,53 +13,139 @@ import {
   type ClearanceItem,
   type ClearanceSettings,
   DEFAULT_CLEARANCE_CONFIG,
-  loadClearanceConfig,
-  saveClearanceConfig,
+  DEFAULT_CLEARANCE_SETTINGS,
 } from '@/data/clearance';
 import { A, Drawer, Field, Toggle, AdminCtx, onImgError } from './ui';
 
 const BADGES: BadgeType[] = ['limited', 'clearance', 'last'];
 
 export default function ClearancePage({ showToast }: AdminCtx) {
-  const [config, setConfig] = useState<ClearanceConfig>(() => loadClearanceConfig());
-  const [dirty, setDirty] = useState(false);
+  const [config, setConfig] = useState<ClearanceConfig>(DEFAULT_CLEARANCE_CONFIG);
+  const [loading, setLoading] = useState(true);
+  const [dirty, setDirty] = useState(false);          // settings have unsaved edits
+  const [savingSettings, setSavingSettings] = useState(false);
   const [editing, setEditing] = useState<ClearanceItem | 'new' | null>(null);
 
   const { settings, items } = config;
   const visible = items.filter(i => !i.hidden).length;
 
-  /* ---- settings mutators ---- */
+  // Load the live config from the DB on mount.
+  useEffect(() => {
+    let ignore = false;
+    fetch('/api/clearance')
+      .then(r => (r.ok ? r.json() : null))
+      .then((data: ClearanceConfig | null) => { if (!ignore && data) setConfig(data); })
+      .catch(() => { if (!ignore) showToast('โหลดข้อมูล Clearance ไม่สำเร็จ — ลองใหม่อีกครั้ง'); })
+      .finally(() => { if (!ignore) setLoading(false); });
+    return () => { ignore = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ---- settings mutators (local until "บันทึก") ---- */
   const patch = (p: Partial<ClearanceSettings>) => { setConfig(c => ({ ...c, settings: { ...c.settings, ...p } })); setDirty(true); };
   const setHero = (k: keyof ClearanceSettings['hero'], v: string) => patch({ hero: { ...settings.hero, [k]: v } });
   const setSection = (k: keyof ClearanceSettings['section'], v: string) => patch({ section: { ...settings.section, [k]: v } });
   const setCta = (k: keyof ClearanceSettings['cta'], v: string) => patch({ cta: { ...settings.cta, [k]: v } });
 
-  /* ---- item ops ---- */
-  const setItems = (next: ClearanceItem[]) => { setConfig(c => ({ ...c, items: next })); setDirty(true); };
-  const saveItem = (data: ClearanceItem) => {
-    if (data.id && items.some(i => i.id === data.id)) {
-      setItems(items.map(i => i.id === data.id ? data : i));
-      showToast('บันทึก "' + data.name + '" แล้ว');
-    } else {
-      const slug = (data.name || 'item').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      const id = 'clr-' + (slug || Date.now());
-      setItems([...items, { ...data, id }]);
-      showToast('เพิ่ม "' + data.name + '" แล้ว');
+  const saveSettings = async () => {
+    if (savingSettings) return;
+    setSavingSettings(true);
+    try {
+      const res = await fetch('/api/clearance', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      if (!res.ok) throw new Error();
+      const saved: ClearanceSettings = await res.json();
+      setConfig(c => ({ ...c, settings: saved }));
+      setDirty(false);
+      showToast('บันทึกการตั้งค่าหน้า Clearance แล้ว · เปิดหน้าเว็บเพื่อดูผล');
+    } catch {
+      showToast('บันทึกไม่สำเร็จ — ลองใหม่อีกครั้ง');
+    } finally {
+      setSavingSettings(false);
     }
-    setEditing(null);
   };
-  const removeItem = (it: ClearanceItem) => { setItems(items.filter(i => i.id !== it.id)); showToast('ลบ "' + it.name + '" แล้ว'); };
-  const toggleHidden = (it: ClearanceItem) => setItems(items.map(i => i.id === it.id ? { ...i, hidden: !i.hidden } : i));
-  const move = (idx: number, dir: -1 | 1) => {
-    const j = idx + dir;
-    if (j < 0 || j >= items.length) return;
-    const next = [...items];
-    [next[idx], next[j]] = [next[j], next[idx]];
-    setItems(next);
+  const reset = () => { setConfig(c => ({ ...c, settings: JSON.parse(JSON.stringify(DEFAULT_CLEARANCE_SETTINGS)) })); setDirty(true); showToast('คืนค่าเริ่มต้นแล้ว — กด “บันทึก” เพื่อยืนยัน'); };
+
+  /* ---- item ops (persist immediately) ---- */
+  const setItems = (next: ClearanceItem[]) => setConfig(c => ({ ...c, items: next }));
+
+  const saveItem = async (data: ClearanceItem) => {
+    const isUpdate = !!data.id && items.some(i => i.id === data.id);
+    try {
+      const res = await fetch(isUpdate ? `/api/clearance/${data.id}` : '/api/clearance', {
+        method: isUpdate ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const msg = await res.json().catch(() => ({}));
+        throw new Error(msg.error || 'บันทึกไม่สำเร็จ');
+      }
+      const saved: ClearanceItem = await res.json();
+      if (isUpdate) {
+        setItems(items.map(i => i.id === saved.id ? saved : i));
+        showToast('บันทึก "' + saved.name + '" แล้ว');
+      } else {
+        setItems([...items, saved]);
+        showToast('เพิ่ม "' + saved.name + '" แล้ว');
+      }
+      setEditing(null);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ');
+    }
   };
 
-  const save = () => { saveClearanceConfig(config); setDirty(false); showToast('บันทึกการตั้งค่าหน้า Clearance แล้ว · เปิดหน้าเว็บเพื่อดูผล'); };
-  const reset = () => { setConfig(JSON.parse(JSON.stringify(DEFAULT_CLEARANCE_CONFIG))); setDirty(true); showToast('คืนค่าเริ่มต้นแล้ว — กด “บันทึก” เพื่อยืนยัน'); };
+  const removeItem = async (it: ClearanceItem) => {
+    const prev = items;
+    setItems(items.filter(i => i.id !== it.id));   // optimistic
+    try {
+      const res = await fetch(`/api/clearance/${it.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      showToast('ลบ "' + it.name + '" แล้ว');
+    } catch {
+      setItems(prev);
+      showToast('ลบไม่สำเร็จ — ลองใหม่อีกครั้ง');
+    }
+  };
+
+  const toggleHidden = async (it: ClearanceItem) => {
+    const next = !it.hidden;
+    const prev = items;
+    setItems(items.map(i => i.id === it.id ? { ...i, hidden: next } : i));   // optimistic
+    try {
+      const res = await fetch(`/api/clearance/${it.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hidden: next }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setItems(prev);
+      showToast('อัปเดตการแสดงผลไม่สำเร็จ');
+    }
+  };
+
+  const move = async (idx: number, dir: -1 | 1) => {
+    const j = idx + dir;
+    if (j < 0 || j >= items.length) return;
+    const prev = items;
+    const next = [...items];
+    [next[idx], next[j]] = [next[j], next[idx]];
+    setItems(next);   // optimistic
+    try {
+      const res = await fetch('/api/clearance', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: next.map(i => i.id) }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setItems(prev);
+      showToast('จัดลำดับไม่สำเร็จ — ลองใหม่อีกครั้ง');
+    }
+  };
 
   return (
     <div>
@@ -68,7 +157,7 @@ export default function ClearancePage({ showToast }: AdminCtx) {
         </div>
         <div className="ph-actions">
           <button className="btn" onClick={() => window.open('/clearance', '_blank')}>{A.ext()} ดูหน้าจริง</button>
-          <button className="btn btn-solid" onClick={save} disabled={!dirty} style={{ opacity: dirty ? 1 : .5 }}>{A.save()} บันทึก{dirty ? ' *' : ''}</button>
+          <button className="btn btn-solid" onClick={saveSettings} disabled={!dirty || savingSettings} style={{ opacity: dirty && !savingSettings ? 1 : .5 }}>{A.save()} {savingSettings ? 'กำลังบันทึก…' : `บันทึก${dirty ? ' *' : ''}`}</button>
         </div>
       </div>
 
@@ -159,7 +248,8 @@ export default function ClearancePage({ showToast }: AdminCtx) {
                   </div>
                 </div>
               ))}
-              {items.length === 0 && <div className="empty"><div className="serif">ยังไม่มีรายการ</div><p>กด “เพิ่มรายการ” เพื่อเริ่ม</p></div>}
+              {loading && items.length === 0 && <div className="empty"><p>กำลังโหลด…</p></div>}
+              {!loading && items.length === 0 && <div className="empty"><div className="serif">ยังไม่มีรายการ</div><p>กด “เพิ่มรายการ” เพื่อเริ่ม</p></div>}
             </div>
           </div>
 
@@ -269,6 +359,32 @@ function ItemEditor({ item, onSave, onClose, onDelete }: {
   const set = <K extends keyof ClearanceItem>(k: K, v: ClearanceItem[K]) => setD(p => ({ ...p, [k]: v }));
   const isNew = !item;
 
+  // image upload → POST /api/upload, then store the returned path in `img`
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadErr, setUploadErr] = useState<string | null>(null);
+  const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';                 // allow re-picking the same file
+    if (!file) return;
+    setUploadErr(null); setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      if (!res.ok) {
+        const msg = await res.json().catch(() => ({}));
+        throw new Error(msg.error || 'อัปโหลดไม่สำเร็จ');
+      }
+      const { url } = await res.json();
+      set('img', url);
+    } catch (err) {
+      setUploadErr(err instanceof Error ? err.message : 'อัปโหลดไม่สำเร็จ');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <>
       <div className="drawer-head">
@@ -307,9 +423,11 @@ function ItemEditor({ item, onSave, onClose, onDelete }: {
             <div className="ie-r">
               <div className="hint">รูปแผ่นหินที่แสดงในกริด · แนะนำสัดส่วน 4:3</div>
               <div style={{ display: 'flex', gap: 9, marginBottom: 9 }}>
-                <button className="btn btn-sm">{A.upload()} อัปโหลดรูป</button>
-                <button className="btn btn-sm btn-ghost">เลือกจากคลัง</button>
+                <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickFile} />
+                <button className="btn btn-sm" disabled={uploading} onClick={() => fileRef.current?.click()}>{A.upload()} {uploading ? 'กำลังอัปโหลด…' : 'อัปโหลดรูป'}</button>
+                <button className="btn btn-sm btn-ghost" disabled>เลือกจากคลัง</button>
               </div>
+              {uploadErr && <div className="login-err thai" style={{ margin: '0 0 9px' }}>{uploadErr}</div>}
               <input className="inp" value={d.img} onChange={e => set('img', e.target.value)} style={{ fontSize: 12 }} />
             </div>
           </div>

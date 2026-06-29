@@ -22,6 +22,9 @@ npm install
 echo "==> 3/5 อัปเดตตาราง DB (prisma migrate deploy)"
 npx prisma migrate deploy
 
+# โฟลเดอร์เก็บรูปที่ผู้ใช้อัปโหลด (gitignored — git pull ไม่แตะ) ต้องมีอยู่เสมอ
+mkdir -p public/uploads
+
 echo "==> 4/5 build production (npm run build)"
 npm run build
 

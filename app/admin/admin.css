@@ -398,14 +398,28 @@
 
 /* ===================== MEDIA ===================== */
 .admin-app .media-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-.admin-app .media-tile{background:var(--card);border:1px solid var(--line);border-radius:9px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .15s}
+.admin-app .media-tile{background:var(--card);border:1px solid var(--line);border-radius:9px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .15s;content-visibility:auto;contain-intrinsic-size:auto 232px}
 .admin-app .media-tile:hover{border-color:var(--gold);transform:translateY(-2px)}
-.admin-app .media-tile .mt-img{aspect-ratio:4/3;overflow:hidden;background:var(--bg-2)}
-.admin-app .media-tile .mt-img img{width:100%;height:100%;object-fit:cover;transition:transform .6s}
-.admin-app .media-tile:hover .mt-img img{transform:scale(1.06)}
+.admin-app .media-tile .mt-img{position:relative;aspect-ratio:4/3;overflow:hidden;background:var(--bg-2)}
+.admin-app .media-tile .mt-img img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .35s ease,transform .6s}
+.admin-app .media-tile .mt-img img.on{opacity:1}
+.admin-app .media-tile:hover .mt-img img.on{transform:scale(1.06)}
+.admin-app .media-tile .mt-act{position:absolute;top:7px;right:7px;display:flex;gap:5px;opacity:0;transition:opacity .15s}
+.admin-app .media-tile:hover .mt-act{opacity:1}
+.admin-app .media-tile .mt-act .icon-btn{background:rgba(20,18,14,.62);border-color:transparent;color:#fff;backdrop-filter:blur(3px)}
+.admin-app .media-tile .mt-act .icon-btn:hover{background:rgba(20,18,14,.85)}
+.admin-app .media-tile .mt-act .icon-btn.del:hover{background:#9b1c1c}
 .admin-app .media-tile .mt-meta{padding:11px 13px}
 .admin-app .media-tile .mt-name{font-size:12.5px;color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .admin-app .media-tile .mt-dim{font-size:10.5px;letter-spacing:.08em;color:var(--muted-2);margin-top:2px;text-transform:uppercase}
+/* shimmer skeleton — used while the list loads and while each photo decodes */
+.admin-app .skel{position:relative;overflow:hidden;background:var(--bg-2)}
+.admin-app .skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(0,0,0,.06),transparent);animation:skel-shimmer 1.3s ease-in-out infinite}
+.admin-app .skel-line{height:11px;border-radius:4px;background:var(--bg-2);position:relative;overflow:hidden}
+.admin-app .skel-line::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(0,0,0,.06),transparent);animation:skel-shimmer 1.3s ease-in-out infinite}
+.admin-app .skel-line.sm{width:55%;height:9px;margin-top:7px}
+@keyframes skel-shimmer{100%{transform:translateX(100%)}}
+@media (prefers-reduced-motion:reduce){.admin-app .skel::after,.admin-app .skel-line::after{animation:none}}
 .admin-app .media-up{border:1.5px dashed var(--line);border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:11px;color:var(--muted);cursor:pointer;min-height:160px;transition:border-color .2s,color .2s,background .2s}
 .admin-app .media-up:hover{border-color:var(--gold);color:var(--gold-deep);background:var(--gold-soft)}
@@ -422,6 +436,9 @@
   border-radius:7px;padding:7px 8px 7px 13px;font-size:12.5px;color:var(--ink-2);white-space:nowrap}
 .admin-app .facet-chip .x{background:none;border:none;cursor:pointer;color:var(--muted-2);display:flex;padding:1px;border-radius:4px;transition:color .18s,background .18s}
 .admin-app .facet-chip .x:hover{color:var(--danger);background:rgba(161,74,58,.1)}
+.admin-app .facet-chip .fc-name{background:none;border:none;padding:0;margin:0;cursor:text;color:inherit;font:inherit;border-radius:3px;transition:color .18s}
+.admin-app .facet-chip .fc-name:hover{color:var(--gold)}
+.admin-app .facet-chip .fc-edit{background:var(--card);border:1px solid var(--gold);border-radius:5px;padding:2px 6px;font-family:var(--sans);font-size:12.5px;color:var(--ink);outline:none;min-width:48px}
 .admin-app .facet-add{display:flex;gap:8px}
 .admin-app .facet-add input{flex:1;background:var(--card);border:1px solid var(--line);padding:8px 12px;border-radius:7px;font-family:var(--sans);font-size:12.5px;color:var(--ink);outline:none}
 .admin-app .facet-add input:focus{border-color:var(--gold)}
@@ -437,6 +454,21 @@
 .admin-app .empty{text-align:center;padding:70px 20px;color:var(--muted)}
 .admin-app .empty .serif{font-family:var(--serif);font-size:26px;color:var(--ink);margin-bottom:8px}
 .admin-app .empty p{font-family:var(--thai);font-size:14px}
+
+/* ----- sortable column headers (TanStack) ----- */
+.admin-app .tbl thead th.th-sort{cursor:pointer;user-select:none;transition:color .15s,background .15s}
+.admin-app .tbl thead th.th-sort:hover{color:var(--gold-deep);background:var(--gold-soft)}
+.admin-app .th-sort-in{display:inline-flex;align-items:center;gap:6px}
+.admin-app .sort-ind{font-size:9px;line-height:1;color:var(--muted-2);opacity:.55}
+.admin-app .sort-ind.on{color:var(--gold-deep);opacity:1}
+
+/* ----- pagination ----- */
+.admin-app .pager{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:16px;flex-wrap:wrap}
+.admin-app .pager-info{font-family:var(--thai);font-size:12px;color:var(--muted);letter-spacing:.02em}
+.admin-app .pager-size{display:flex;align-items:center;gap:8px;font-family:var(--thai);font-size:12px;color:var(--muted)}
+.admin-app .pager-size .sel{width:auto;padding:6px 26px 6px 10px;font-size:12px}
+.admin-app .pager-ctrl{display:flex;align-items:center;gap:12px;margin-left:auto}
+.admin-app .pager-cur{font-family:var(--thai);font-size:12px;color:var(--ink-2);min-width:78px;text-align:center}
 
 /* ===================== CLEARANCE (settings + live preview) ===================== */
 .admin-app .clr-admin{display:grid;grid-template-columns:minmax(0,1fr) minmax(380px,440px);gap:22px;align-items:start}

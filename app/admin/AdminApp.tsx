@@ -46,11 +46,32 @@ export default function AdminApp() {
       .finally(() => setAuthChecked(true));
   }, []);
 
-  // central editable state, seeded from data.ts
+  // central editable state, seeded from data.ts (replaced by the DB once signed in)
   const [stones, setStones] = useState<Stone[]>(() => STONES.map(s => ({ ...s, status: s.status || 'published' })));
+
   const [inquiries, setInquiries] = useState<Inquiry[]>(() => INQUIRIES.map(i => ({ ...i })));
   const [facets, setFacets] = useState<Facets>(() => JSON.parse(JSON.stringify(FACETS)));
   const [tagOptions, setTagOptions] = useState<string[]>(() => [...TAGS]);
+
+  // Load the live catalogue + filter/keyword vocab from the DB after sign-in;
+  // keep the static seed as fallback so the UI renders before these resolve.
+  useEffect(() => {
+    if (!me) return;
+    fetch('/api/stones')
+      .then(r => r.ok ? r.json() : null)
+      .then((rows: Stone[] | null) => { if (Array.isArray(rows)) setStones(rows); })
+      .catch(() => {});
+    fetch('/api/facets')
+      .then(r => r.ok ? r.json() : null)
+      .then((data: Record<string, { name: string }[]> | null) => {
+        if (data) setFacets(Object.fromEntries(Object.entries(data).map(([k, v]) => [k, v.map(o => o.name)])));
+      })
+      .catch(() => {});
+    fetch('/api/tags')
+      .then(r => r.ok ? r.json() : null)
+      .then((rows: { name: string }[] | null) => { if (Array.isArray(rows)) setTagOptions(rows.map(t => t.name)); })
+      .catch(() => {});
+  }, [me?.id]);
   const [toast, showToast] = useToast();
 
   const go = (r: string) => { setRoute(r); document.querySelector('.view')?.scrollTo({ top: 0 }); };

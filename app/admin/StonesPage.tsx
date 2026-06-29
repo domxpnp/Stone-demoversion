@@ -1,44 +1,207 @@
 'use client';
 
 /* ===== STONECLUB ADMIN — Catalogue: list + editor ===== */
-import { useState, Dispatch, SetStateAction } from 'react';
+import { useState, useRef, useEffect, useMemo, Dispatch, SetStateAction } from 'react';
+import {
+  useReactTable,
+  getCoreRowModel,
+  flexRender,
+  createColumnHelper,
+  type SortingState,
+  type ColumnDef,
+} from '@tanstack/react-table';
 import type { Stone } from '@/data/stones';
 import { A, Drawer, Field, Toggle, Facets, AdminCtx, onImgError } from './ui';
 
+const PAGE_SIZES = [10, 20, 50, 100];
+
+// Mirror of the server's paginated envelope (lib/stones.ts → ListStonesResult).
+interface StonePage { rows: Stone[]; total: number; page: number; limit: number; totalPages: number; }
+
 export default function StonesPage({ stones, setStones, facets, tagOptions, setTagOptions, showToast }: AdminCtx) {
   const [q, setQ] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
   const [matFilter, setMatFilter] = useState('All');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'name', desc: false }]);
+  const [reloadKey, setReloadKey] = useState(0);   // bump to force a refetch of the current view
   const [editing, setEditing] = useState<Stone | 'new' | null>(null);
 
-  const materials = ['All', ...facets.Material.filter(m => stones.some(s => s.material === m))];
+  // server-driven list state (only the current page lives in the client)
+  const [rows, setRows] = useState<Stone[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = stones.filter(s => {
-    if (matFilter !== 'All' && s.material !== matFilter) return false;
-    if (q) {
-      const hay = (s.name + ' ' + s.origin + ' ' + s.color + ' ' + s.material).toLowerCase();
-      if (!hay.includes(q.toLowerCase())) return false;
+  const materials = ['All', ...facets.Material];
+  const refetch = () => setReloadKey(k => k + 1);
+
+  // debounce the search box so we don't hit the DB on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q.trim()), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  // fetch one page from the server whenever the query, filter, sort, or page changes
+  useEffect(() => {
+    let ignore = false;
+    setLoading(true);
+    const params = new URLSearchParams({ page: String(page), limit: String(pageSize) });
+    if (debouncedQ) params.set('q', debouncedQ);
+    if (matFilter !== 'All') params.set('material', matFilter);
+    const sort = sorting[0];
+    if (sort) { params.set('sort', sort.id); params.set('dir', sort.desc ? 'desc' : 'asc'); }
+    fetch(`/api/stones?${params.toString()}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then((data: StonePage | null) => {
+        if (ignore || !data) return;
+        setRows(data.rows);
+        setTotal(data.total);
+        setTotalPages(data.totalPages);
+        // a delete on the last page can leave us past the end — step back
+        if (page > data.totalPages) setPage(data.totalPages);
+      })
+      .catch(() => { if (!ignore) showToast('โหลดรายการไม่สำเร็จ — ลองใหม่อีกครั้ง'); })
+      .finally(() => { if (!ignore) setLoading(false); });
+    return () => { ignore = true; };
+  }, [debouncedQ, matFilter, page, pageSize, sorting, reloadKey]);
+
+  const [busy, setBusy] = useState(false);
+
+  const save = async (data: Stone) => {
+    if (busy) return;
+    const isUpdate = !!data.id && (rows.some(s => s.id === data.id) || stones.some(s => s.id === data.id));
+    setBusy(true);
+    try {
+      const res = await fetch(isUpdate ? `/api/stones/${data.id}` : '/api/stones', {
+        method: isUpdate ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const msg = await res.json().catch(() => ({}));
+        throw new Error(msg.error || 'บันทึกไม่สำเร็จ');
+      }
+      const saved: Stone = await res.json();
+      if (isUpdate) {
+        setRows(rows.map(s => s.id === saved.id ? saved : s));
+        setStones(stones.map(s => s.id === saved.id ? saved : s));   // keep shared state (dashboard/facets/tags) fresh
+        showToast('บันทึก "' + saved.name + '" เรียบร้อย');
+      } else {
+        setStones([saved, ...stones]);
+        showToast('เพิ่ม "' + saved.name + '" ลงแค็ตตาล็อกแล้ว');
+        // reveal the new row in server order: jump to page 1 (or refetch if already there)
+        if (page === 1) refetch(); else setPage(1);
+      }
+      setEditing(null);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ');
+    } finally {
+      setBusy(false);
     }
-    return true;
+  };
+  const remove = async (s: Stone) => {
+    const prevRows = rows, prevTotal = total, prevStones = stones;
+    setRows(rows.filter(x => x.id !== s.id));            // optimistic
+    setTotal(t => Math.max(0, t - 1));
+    setStones(stones.filter(x => x.id !== s.id));
+    try {
+      const res = await fetch(`/api/stones/${s.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      showToast('ลบ "' + s.name + '" แล้ว');
+      refetch();                                          // pull the next row in to fill the page
+    } catch {
+      setRows(prevRows); setTotal(prevTotal); setStones(prevStones);   // rollback
+      showToast('ลบไม่สำเร็จ — ลองใหม่อีกครั้ง');
+    }
+  };
+  const togglePublish = async (s: Stone) => {
+    const next = s.status === 'draft' ? 'published' : 'draft';
+    const prevRows = rows, prevStones = stones;
+    setRows(rows.map(x => x.id === s.id ? { ...x, status: next } : x));        // optimistic
+    setStones(stones.map(x => x.id === s.id ? { ...x, status: next } : x));
+    try {
+      const res = await fetch(`/api/stones/${s.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: next }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setRows(prevRows); setStones(prevStones);                                // rollback
+      showToast('อัปเดตสถานะไม่สำเร็จ');
+    }
+  };
+
+  // changing the search or facet filter always restarts from page 1
+  const onSearch = (v: string) => { setQ(v); setPage(1); };
+  const onMaterial = (m: string) => { setMatFilter(m); setPage(1); };
+  const onPageSize = (n: number) => { setPageSize(n); setPage(1); };
+
+  // ----- TanStack Table: columns + headless instance (server sort/pagination) -----
+  const col = createColumnHelper<Stone>();
+  const columns = useMemo<ColumnDef<Stone, any>[]>(() => [
+    col.accessor('name', {
+      header: 'Stone',
+      cell: ({ row }) => {
+        const s = row.original;
+        return (
+          <div className="col-name">
+            <img className="th-img" src={s.img} alt="" loading="lazy" onError={onImgError} />
+            <div><div className="nm">{s.name}</div><div className="id">{s.color} · {s.id}</div></div>
+          </div>
+        );
+      },
+    }),
+    col.accessor('material', { header: 'Material' }),
+    col.accessor('origin', { header: 'Origin' }),
+    col.accessor('finish', { header: 'Finish', cell: ({ getValue }) => <span className="meta-sm">{getValue()}</span> }),
+    col.accessor('premium', {
+      header: 'Tier',
+      cell: ({ getValue }) => getValue()
+        ? <span className="badge badge-prem">{A.star({ width: 11, height: 11 })} Premium</span>
+        : <span style={{ color: 'var(--muted-2)' }}>Standard</span>,
+    }),
+    col.accessor('status', {
+      header: 'Status',
+      cell: ({ getValue }) => getValue() === 'draft'
+        ? <span className="badge badge-mut"><span className="d" />Draft</span>
+        : <span className="badge badge-ok"><span className="d" />Published</span>,
+    }),
+    col.display({
+      id: 'actions',
+      header: '',
+      cell: ({ row }) => {
+        const s = row.original;
+        return (
+          <div className="row-act" onClick={e => e.stopPropagation()}>
+            <button className="icon-btn" title={s.status === 'draft' ? 'Publish' : 'Unpublish'} onClick={() => togglePublish(s)}>{A.eye()}</button>
+            <button className="icon-btn" title="Edit" onClick={() => setEditing(s)}>{A.edit()}</button>
+            <button className="icon-btn del" title="Delete" onClick={() => remove(s)}>{A.trash()}</button>
+          </div>
+        );
+      },
+    }),
+    // handlers are recreated each render; rebuild cell closures so they're never stale
+  ], [rows, stones, total, page]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const table = useReactTable({
+    data: rows,
+    columns,
+    state: { sorting },
+    onSortingChange: updater => {
+      setSorting(prev => (typeof updater === 'function' ? updater(prev) : updater));
+      setPage(1);   // a new sort order means we start from the first page again
+    },
+    manualSorting: true,
+    manualPagination: true,
+    pageCount: totalPages,
+    getCoreRowModel: getCoreRowModel(),
   });
 
-  const save = (data: Stone) => {
-    if (data.id && stones.some(s => s.id === data.id)) {
-      setStones(stones.map(s => s.id === data.id ? data : s));
-      showToast('บันทึก "' + data.name + '" เรียบร้อย');
-    } else {
-      const id = (data.name || 'new-stone').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'stone-' + Date.now();
-      setStones([{ ...data, id }, ...stones]);
-      showToast('เพิ่ม "' + data.name + '" ลงแค็ตตาล็อกแล้ว');
-    }
-    setEditing(null);
-  };
-  const remove = (s: Stone) => {
-    setStones(stones.filter(x => x.id !== s.id));
-    showToast('ลบ "' + s.name + '" แล้ว');
-  };
-  const togglePublish = (s: Stone) => {
-    setStones(stones.map(x => x.id === s.id ? { ...x, status: x.status === 'draft' ? 'published' : 'draft' } : x));
-  };
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
 
   return (
     <div>
@@ -56,49 +219,77 @@ export default function StonesPage({ stones, setStones, facets, tagOptions, setT
       <div className="toolbar">
         <div className="tb-search" style={{ margin: 0, width: 280 }}>
           {A.search()}
-          <input placeholder="ค้นหาชื่อ / แหล่งที่มา / สี…" value={q} onChange={e => setQ(e.target.value)} />
+          <input placeholder="ค้นหาชื่อ / แหล่งที่มา / สี…" value={q} onChange={e => onSearch(e.target.value)} />
         </div>
         <div className="seg">
           {materials.map(m => (
-            <button key={m} className={matFilter === m ? 'on' : ''} onClick={() => setMatFilter(m)}>{m}</button>
+            <button key={m} className={matFilter === m ? 'on' : ''} onClick={() => onMaterial(m)}>{m}</button>
           ))}
         </div>
-        <span className="count-note">{filtered.length} of {stones.length}</span>
+        <span className="count-note">{loading ? 'กำลังโหลด…' : `${total} รายการ`}</span>
       </div>
 
       <div className="tbl-wrap">
         <table className="tbl">
           <thead>
-            <tr><th>Stone</th><th>Material</th><th>Origin</th><th>Finish</th><th>Tier</th><th>Status</th><th></th></tr>
-          </thead>
-          <tbody>
-            {filtered.map(s => (
-              <tr key={s.id} onClick={() => setEditing(s)}>
-                <td>
-                  <div className="col-name">
-                    <img className="th-img" src={s.img} alt="" onError={onImgError} />
-                    <div><div className="nm">{s.name}</div><div className="id">{s.color} · {s.id}</div></div>
-                  </div>
-                </td>
-                <td>{s.material}</td>
-                <td>{s.origin}</td>
-                <td className="meta-sm">{s.finish}</td>
-                <td>{s.premium ? <span className="badge badge-prem">{A.star({ width: 11, height: 11 })} Premium</span> : <span style={{ color: 'var(--muted-2)' }}>Standard</span>}</td>
-                <td>{s.status === 'draft' ? <span className="badge badge-mut"><span className="d" />Draft</span> : <span className="badge badge-ok"><span className="d" />Published</span>}</td>
-                <td>
-                  <div className="row-act" onClick={e => e.stopPropagation()}>
-                    <button className="icon-btn" title={s.status === 'draft' ? 'Publish' : 'Unpublish'} onClick={() => togglePublish(s)}>{A.eye()}</button>
-                    <button className="icon-btn" title="Edit" onClick={() => setEditing(s)}>{A.edit()}</button>
-                    <button className="icon-btn del" title="Delete" onClick={() => remove(s)}>{A.trash()}</button>
-                  </div>
-                </td>
+            {table.getHeaderGroups().map(hg => (
+              <tr key={hg.id}>
+                {hg.headers.map(header => {
+                  const canSort = header.column.getCanSort();
+                  const sorted = header.column.getIsSorted();   // false | 'asc' | 'desc'
+                  return (
+                    <th
+                      key={header.id}
+                      className={canSort ? 'th-sort' : undefined}
+                      onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                    >
+                      <span className="th-sort-in">
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {canSort && (
+                          <span className={'sort-ind' + (sorted ? ' on' : '')}>
+                            {sorted === 'desc' ? '▼' : sorted === 'asc' ? '▲' : '↕'}
+                          </span>
+                        )}
+                      </span>
+                    </th>
+                  );
+                })}
               </tr>
             ))}
-            {filtered.length === 0 && (
-              <tr><td colSpan={7}><div className="empty"><div className="serif">No stones found</div><p>ลองปรับคำค้นหรือตัวกรอง</p></div></td></tr>
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map(row => (
+              <tr key={row.original.id} onClick={() => setEditing(row.original)}>
+                {row.getVisibleCells().map(cell => (
+                  <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                ))}
+              </tr>
+            ))}
+            {!loading && rows.length === 0 && (
+              <tr><td colSpan={columns.length}><div className="empty"><div className="serif">No stones found</div><p>ลองปรับคำค้นหรือตัวกรอง</p></div></td></tr>
+            )}
+            {loading && rows.length === 0 && (
+              <tr><td colSpan={columns.length}><div className="empty"><p>กำลังโหลด…</p></div></td></tr>
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="pager">
+        <div className="pager-size">
+          <span>แสดง</span>
+          <select className="sel" value={pageSize} onChange={e => onPageSize(Number(e.target.value))}>
+            {PAGE_SIZES.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <span>ต่อหน้า · {from}–{to} จาก {total}</span>
+        </div>
+        {totalPages > 1 && (
+          <div className="pager-ctrl">
+            <button className="btn btn-sm" disabled={page <= 1 || loading} onClick={() => setPage(p => Math.max(1, p - 1))}>{A.arrowL({ width: 15, height: 15 })} ก่อนหน้า</button>
+            <span className="pager-cur">หน้า {page} / {totalPages}</span>
+            <button className="btn btn-sm" disabled={page >= totalPages || loading} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>ถัดไป {A.arrow({ width: 15, height: 15 })}</button>
+          </div>
+        )}
       </div>
 
       <Drawer open={!!editing} onClose={() => setEditing(null)}>
@@ -159,6 +350,32 @@ function StoneEditor({ stone, facets, tagOptions, setTagOptions, onSave, onClose
   const [specKeys, setSpecKeys] = useState<string[]>(() => Object.keys((stone || BLANK).spec));
   const addSpec = () => setSpecKeys(k => [...k, '']);
 
+  // hero image upload → POST /api/upload, then store the returned path in `img`
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadErr, setUploadErr] = useState<string | null>(null);
+  const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';                 // allow re-picking the same file
+    if (!file) return;
+    setUploadErr(null); setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      if (!res.ok) {
+        const msg = await res.json().catch(() => ({}));
+        throw new Error(msg.error || 'อัปโหลดไม่สำเร็จ');
+      }
+      const { url } = await res.json();
+      set('img', url);
+    } catch (err) {
+      setUploadErr(err instanceof Error ? err.message : 'อัปโหลดไม่สำเร็จ');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <>
       <div className="drawer-head">
@@ -206,9 +423,13 @@ function StoneEditor({ stone, facets, tagOptions, setTagOptions, onSave, onClose
             <div className="ie-r">
               <div className="hint">รูปแผ่นหินหลักที่แสดงในแค็ตตาล็อกและหน้าสินค้า · แนะนำสัดส่วน 3:4</div>
               <div style={{ display: 'flex', gap: 9, marginBottom: 9 }}>
-                <button className="btn btn-sm">{A.upload()} อัปโหลดรูป</button>
-                <button className="btn btn-sm btn-ghost">เลือกจากคลัง</button>
+                <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickFile} />
+                <button className="btn btn-sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                  {A.upload()} {uploading ? 'กำลังอัปโหลด…' : 'อัปโหลดรูป'}
+                </button>
+                <button className="btn btn-sm btn-ghost" disabled>เลือกจากคลัง</button>
               </div>
+              {uploadErr && <div className="login-err thai" style={{ margin: '0 0 9px' }}>{uploadErr}</div>}
               <input className="inp" value={d.img} onChange={e => set('img', e.target.value)} style={{ fontSize: 12 }} />
             </div>
           </div>

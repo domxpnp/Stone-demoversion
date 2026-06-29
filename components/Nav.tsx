@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
-import { CLEARANCE_STORAGE_KEY, DEFAULT_CLEARANCE_SETTINGS, loadClearanceConfig } from '@/data/clearance';
+import { DEFAULT_CLEARANCE_SETTINGS, type ClearanceConfig } from '@/data/clearance';
 import Icon from './ui/Icon';
 
 export default function Nav() {
@@ -19,11 +19,12 @@ export default function Nav() {
   const [clearance, setClearance] = useState(DEFAULT_CLEARANCE_SETTINGS);
 
   useEffect(() => {
-    const read = () => setClearance(loadClearanceConfig().settings);
-    read();
-    const sync = (e: StorageEvent) => { if (e.key === CLEARANCE_STORAGE_KEY) read(); };
-    window.addEventListener('storage', sync);
-    return () => window.removeEventListener('storage', sync);
+    let ignore = false;
+    fetch('/api/clearance')
+      .then(r => (r.ok ? r.json() : null))
+      .then((data: ClearanceConfig | null) => { if (!ignore && data) setClearance(data.settings); })
+      .catch(() => {});
+    return () => { ignore = true; };
   }, []);
 
   useEffect(() => {
